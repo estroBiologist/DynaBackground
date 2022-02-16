@@ -12,6 +12,7 @@ module.exports = class DynaBackground {
 			"default": "",
 		};
 		this.lastBackground = this.backgrounds["default"];
+		this.fade = true;
 	}
 
 	load() {
@@ -21,7 +22,7 @@ module.exports = class DynaBackground {
 	start() {
 		if (!global.ZeresPluginLibrary) return window.BdApi.alert("Library Missing",`The library plugin needed for ${this.getName()} is missing.<br /><br /> <a href="https://betterdiscord.net/ghdl?url=https://raw.githubusercontent.com/rauenzi/BDPluginLibrary/master/release/0PluginLibrary.plugin.js" target="_blank">Click here to download the library!</a>`);
 
-		this.backgrounds = ZLibrary.Utilities.loadData("DynaBackground", "backgrounds", {"default": ""});
+		this.applySettings(ZLibrary.Utilities.loadSettings("DynaBackground", this.getDefaultSettings()));
 
 		ZLibrary.DiscordModules.SelectedGuildStore._changeCallbacks.add(this.updateBackgrounds.bind(this));
 		this.updateBackgrounds();
@@ -29,6 +30,19 @@ module.exports = class DynaBackground {
 
 	stop() {
 		ZLibrary.DiscordModules.SelectedGuildStore._changeCallbacks.delete(this.updateBackgrounds.bind(this));
+	}
+
+	getDefaultSettings() {
+		return { backgrounds: {"default": ""}, fade: true}
+	}
+
+	getSettings() {
+		return {backgrounds: this.backgrounds, fade: this.fade}
+	}
+
+	applySettings(settings) {
+		this.fade = settings.fade;
+		this.backgrounds = settings.backgrounds;
 	}
 
 	updateBackgrounds() {
@@ -43,17 +57,19 @@ module.exports = class DynaBackground {
 		if (selectedBackground != this.lastBackground) {
 			ZLibrary.DOMTools.removeStyle(69);
 			ZLibrary.DOMTools.addStyle(69, ":root { --background-image: url('" + this.lastBackground + "') !important; --background: var(--background-image); }" + 
-			"body::before { transition: opacity 2s; opacity: 0.0; };");
+			(this.fade ? "body::before { transition: opacity 2s; opacity: 0.0; };" : ""));
 			
-			console.log("setting background to " + selectedBackground);
+			console.log("setting background to " + selectedBackground + " with fade " + !!this.fade);
 			
 			this.lastBackground = selectedBackground;
-			setTimeout(function(){
-				ZLibrary.DOMTools.removeStyle(69);
-				ZLibrary.DOMTools.addStyle(69, ":root { --background-image: url('" + selectedBackground + "') !important; --background: var(--background-image); }" + 
-				"body::before { transition: opacity 2s; opacity: 1.0; };");
-			}.bind(this), 2000);
-			
+			if (this.fade) {
+				setTimeout(function(){
+					ZLibrary.DOMTools.removeStyle(69);
+					ZLibrary.DOMTools.addStyle(69, ":root { --background-image: url('" + selectedBackground + "') !important; --background: var(--background-image); }" + 
+					(this.fade ? "body::before { transition: opacity 2s; opacity: 1.0; };" : ""));
+				}.bind(this), 2000);
+			}
+				
 		}
 	}
 
@@ -66,7 +82,7 @@ module.exports = class DynaBackground {
 
 			console.log("Setting " + key + " to " + text);
 
-			ZLibrary.Utilities.saveData("DynaBackground", "backgrounds", this.backgrounds);
+			ZLibrary.Utilities.saveSettings("DynaBackground", this.getSettings());
 			this.updateBackgrounds();
 		}
 	}
@@ -77,7 +93,14 @@ module.exports = class DynaBackground {
 		let settingsPanel = new ZLibrary.Settings.SettingPanel();
 
 		let defaultBgCallback = this.createBgCallback("default");
+
 		settingsPanel.append(new ZLibrary.Settings.Textbox("Default Background", "", this.backgrounds["default"], defaultBgCallback.bind(this)));
+
+		settingsPanel.append(new ZLibrary.Settings.Switch("Fade to black when switching backgrounds", "", this.fade, function(val){ 
+			this.fade = !!val;
+			ZLibrary.Utilities.saveSettings("DynaBackground", this.getSettings());
+		}.bind(this)));
+
 		settingsPanel.append(backgroundsPanel);
 		
 		for (const [guild_id, data] of Object.entries(guilds)) {
