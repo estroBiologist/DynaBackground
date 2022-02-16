@@ -42,11 +42,18 @@ module.exports = class DynaBackground {
 		
 		if (selectedBackground != this.lastBackground) {
 			ZLibrary.DOMTools.removeStyle(69);
-			ZLibrary.DOMTools.addStyle(69, ":root { --background-image: url('" + selectedBackground + "') !important; --background: var(--background-image); }");
+			ZLibrary.DOMTools.addStyle(69, ":root { --background-image: url('" + this.lastBackground + "') !important; --background: var(--background-image); }" + 
+			"body::before { transition: opacity 2s; opacity: 0.0; };");
 			
 			console.log("setting background to " + selectedBackground);
 			
 			this.lastBackground = selectedBackground;
+			setTimeout(function(){
+				ZLibrary.DOMTools.removeStyle(69);
+				ZLibrary.DOMTools.addStyle(69, ":root { --background-image: url('" + selectedBackground + "') !important; --background: var(--background-image); }" + 
+				"body::before { transition: opacity 2s; opacity: 1.0; };");
+			}.bind(this), 2000);
+			
 		}
 	}
 
