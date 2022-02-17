@@ -1,6 +1,6 @@
 /**
  * @name DynaBackground
- * @version 1.0.0
+ * @version 1.1.0
  * @description Simple plugin that lets you set custom backgrounds per server.
  * @author Ash Taylor
  *  
